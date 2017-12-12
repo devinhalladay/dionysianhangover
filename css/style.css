@@ -1,0 +1,178 @@
+body {
+  margin: 0px auto;
+  max-width: 1150px;
+  font-family: "nitti grotesk";
+}
+
+#overlay {
+  position: absolute;
+  top: 80px;
+  left: calc(50% - 266px);
+  margin: auto;
+  z-index: -1000;
+}
+
+#receipt {
+  top: 205px;
+  position: absolute;
+  width: 260px;
+}
+
+#gender {
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 0;
+  position: absolute;
+  right: 0;
+}
+
+#emotion_name {
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+
+h3 {
+  text-align: center;
+  padding-top: 10px;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+.header {
+  text-align: center;
+  font-weight: 400;
+  padding-bottom: 10px;
+}
+
+.transaction-id {
+  position: relative;
+}
+
+.emo-line {
+  position: relative;
+  top: 25px;
+}
+
+#emotion_name {
+  padding-top: 0;
+  position: absolute;
+  right: 0;
+  margin-top: 0;
+}
+
+#gender {
+
+}
+
+#videoel {
+  display: none;
+}
+
+#container {
+  position: relative;
+  text-align: center;
+
+}
+
+#content {
+}
+
+#emotion_name {
+  /*padding-top: 10px;*/
+}
+
+.button--start {
+  box-shadow: inset 0 3.125px 0 #36bafc, inset 0 -3.125px 0 #04a9fb, inset 0 0 0 3.125px #0eacfb, inset 0 0 0 8.33333333px #1db1fc, inset 0 0 0 10px #0376b0, inset 0 0 0 10.86956522px #001119, inset 0 0 0 13.33333333px rgba(180, 229, 254, 0.7), inset 0 0 0 18.18181818px #1db1fc, inset 0 40px 13.33333333px #04a9fb, inset 0 0 10px 16.66666667px #0398e2, 0 5px 0 rgb(77, 103, 121);
+  position: relative;
+  display: inline-block;
+  width: 100px;
+  height: 100px;
+  border: 0;
+  margin-bottom: 80px;
+  outline: none;
+  background-color: #1db1fc;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: box-shadow 200ms;
+}
+.button--start:after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 10px;
+  display: block;
+  width: 80px;
+  height: 80px;
+  border: 6.66666667px solid rgba(0, 0, 0, 0.3);
+  border-width: 0 0 6.66666667px;
+  border-radius: 50%;
+  transition-duration: 200ms;
+}
+.button--start:active, .button--start.is-pushed {
+  box-shadow: inset 0 3.125px 0 #36bafc, inset 0 -3.125px 0 #04a9fb, inset 0 0 0 3.125px #0eacfb, inset 0 0 0 8.33333333px #1db1fc, inset 0 0 0 10px #0376b0, inset 0 0 0 11.76470588px #01334b, inset 0 0 0 13.33333333px rgba(180, 229, 254, 0.2), inset 0 0 0 18.18181818px #0eacfb, inset 0 40px 13.33333333px #049fec, inset 0 0 10px 16.66666667px #0387c9, 0 5px 0 rgba(0, 0, 0, 0.3);
+  background-color: #13aefb;
+}
+.button--start:active:after, .button--start.is-pushed:after {
+  bottom: 11.66666667px;
+  border-width: 0;
+}
+
+
+
+.button-container {
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  text-align: center;
+}
+
+.right {
+  float: right;
+}
+
+.left {
+  position: absolute;
+  float: left;
+  position: absolute;
+  left: 0;
+  margin: 0;
+}
+
+.gender-line {
+  top: 45px;
+position: relative;
+}
+
+#emotion_container {
+  width: 260px;
+  margin: auto;
+  margin-top: 80px;
+}
+
+#emotion_icons {
+  height: 50px;
+  padding-left: 40px;
+}
+
+.emotion_icon {
+  width : 40px;
+  height : 40px;
+  margin-top: 5px;
+  margin-left : 35px;
+}
+
+#emotion_chart, #emotion_icons {
+  margin: 0 auto;
+  width : 400px;
+}
+
+#sketch-holder canvas {
+  z-index: -90909090;
+}

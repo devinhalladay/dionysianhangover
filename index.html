@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Dionysian Hangover</title>
+		<meta charset="utf-8">
+    <link href="/css/style.css" rel="stylesheet" type="text/css">
+		<script src='https://code.responsivevoice.org/responsivevoice.js'></script>
+		<script
+		  src="https://code.jquery.com/jquery-3.2.1.min.js"
+		  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+		  crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.16/p5.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.5.16/addons/p5.dom.min.js"></script>
+	</head>
+	<body class="hide--video">
+		<script src="./js/libs/utils.js"></script>
+		<script src="../build/clmtrackr.js"></script>
+		<script src="../models/model_pca_20_svm.js"></script>
+		<script src="./js/libs/d3.min.js"></script>
+		<script src="./js/libs/moment.js"></script>
+		<script src="./js/emotion_classifier.js"></script>
+		<script src="./js/emotionmodel.js"></script>
+		<script src="./js/gendermodel.js"></script>
+		<div id="content">
+			<div id="container">
+				<video id="videoel" width="230" height="400" preload="auto" loop playsinline autoplay></video>
+				<canvas id="overlay" width="230" height="400"></canvas>
+			</div>
+			<div id="emotion_container">
+				<div id="receipt">
+					<div class="transaction-id" style="display: none;"><span class="left">Transaction ID: </span><span class="right" id="transaction-id"></span></div>
+					<div class="emo-line" style="display: none;">
+						<p class="left">Emotion</p>
+	          <h2 class="right" id="emotion_name"></h2>
+					</div>
+					<div class="gender-line" style="display: none;">
+						<p class="left">Gender</p>
+	          <p class="right" id="gender"></p>
+					</div>
+				</div>
+			</div>
+			<div id="button-container" class="button-container">
+				<!-- Container for start button, rendered by P5 -->
+			</div>
+			<div id="sketch-holder">
+				<!-- Sketch starts here -->
+			</div>
+			<script>
+				var vid = document.getElementById('videoel');
+				var vid_width = vid.width;
+				var vid_height = vid.height;
+				var overlay = document.getElementById('overlay');
+				var overlayCC = overlay.getContext('2d');
+
+				function LeftPadWithZeros(number, length) {
+				    var str = '' + number;
+				    while (str.length < length) {
+				        str = '0' + str;
+				    }
+
+				    return str;
+				}
+
+				/********** check and set up video/webcam **********/
+
+				function enablestart() {
+					var startbutton = document.getElementById('startbutton');
+					startbutton.disabled = null;
+				}
+
+				function adjustVideoProportions() {
+					var proportion = vid.videoWidth/vid.videoHeight;
+					vid_width = Math.round(vid_height * proportion);
+					vid.width = vid_width;
+					overlay.width = vid_width;
+				}
+
+				function authSuccess( stream ) {
+					// add camera stream if getUserMedia succeeded
+					if ("srcObject" in vid) {
+						vid.srcObject = stream;
+					} else {
+						vid.src = (window.URL && window.URL.createObjectURL(stream));
+					}
+					vid.onloadedmetadata = function() {
+						adjustVideoProportions();
+						vid.play();
+					}
+					vid.onresize = function() {
+						adjustVideoProportions();
+						if (trackingStarted) {
+							ctrack.stop();
+							ctrack.reset();
+							ctrack.start(vid);
+						}
+					}
+				}
+
+				function authFail() {
+					alert("We need webcam access to print your receipt!");
+				}
+
+				navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+				window.URL = window.URL || window.webkitURL || window.msURL || window.mozURL;
+
+				// check for camerasupport
+				if (navigator.mediaDevices) {
+					navigator.mediaDevices.getUserMedia({video : true}).then(authSuccess).catch(authFail);
+				} else if (navigator.getUserMedia) {
+					navigator.getUserMedia({video : true}, authSuccess, authFail);
+				} else {
+					alert("This demo depends on getUserMedia, which your browser does not seem to support. :(");
+				}
+
+				vid.addEventListener('canplay', enablestart, false);
+
+				/*********** setup of emotion detection *************/
+
+				// set eigenvector 9 and 11 to not be regularized. This is to better detect motion of the eyebrows
+				pModel.shapeModel.nonRegularizedVectors.push(9);
+				pModel.shapeModel.nonRegularizedVectors.push(11);
+
+				var ctrack = new clm.tracker({useWebGL : true});
+				ctrack.init(pModel);
+				var trackingStarted = false;
+
+				function startVideo() {
+					$('.transaction-id').show();
+					$('.emo-line').show();
+					$('.gender-line').show();
+					document.getElementById('transaction-id').innerHTML = LeftPadWithZeros(Math.floor(100000000 + Math.random() * 900000000), 9)
+
+					// Pause video, stop and reset face tracker.
+					if (trackingStarted) {
+						vid.pause();
+						ctrack.stop();
+						ctrack.reset();
+					}
+					// start video
+					vid.play();
+					// start tracking
+					ctrack.start(vid);
+					trackingStarted = true;
+					// start loop to draw face
+					drawLoop();
+				}
+
+				var gender = undefined;
+				function drawLoop() {
+					requestAnimFrame(drawLoop);
+					overlayCC.clearRect(0, 0, vid_width, vid_height);
+					if (ctrack.getCurrentPosition()) {
+						ctrack.draw(overlay);
+					}
+					var cp = ctrack.getCurrentParameters();
+
+					var er = ec.meanPredict(cp);
+					var gr = gc.meanPredict(cp);
+					if (er && gr) {
+						for (var i = 0;i < er.length;i++) {
+							if (er[i].value > 0.4) {
+								if(!responsiveVoice.isPlaying()) {
+									// responsiveVoice.speak('You are ' + er[i]['emotion'], "US English Female");
+									document.getElementById('emotion_name').textContent=er[i]['emotion'];
+								}
+							}
+						}
+
+						function getYs(){
+						  return gr.map(d => d.value);
+						}
+
+						function getMaxY(){
+						  return Math.max(...getYs());
+						}
+
+						var currentGender = gr.filter(function( obj ) {
+						  return obj.value == getMaxY();
+						});
+
+						document.getElementById('gender').textContent=currentGender[0].emotion;
+					}
+				}
+
+				delete emotionModel['disgusted'];
+				delete emotionModel['fear'];
+
+				var ec = new emotionClassifier();
+				ec.init(emotionModel);
+				var emotionData = ec.getBlank();
+
+				var gc = new emotionClassifier();
+				gc.init(genderModel);
+				var genderData = gc.getBlank();
+
+
+
+				var canvas;
+				var button;
+				var receiptY;
+				var constrainedReceiptY;
+				var secondsPassed;
+				var feelingCost = 0.0043;
+				var duration;
+				var item1Left;
+				var item1Right;
+
+				function centerCanvas() {
+				  var x = (windowWidth - width) / 2;
+				  var y = (windowHeight - height) / 2;
+				  canvas.position(x, y);
+				}
+
+
+				function randomIntFromInterval(min,max) {
+			    return Math.random()*(max-min+1)+min;
+				}
+
+				Number.random = function(minimum, maximum, precision) {
+			    minimum = minimum === undefined ? 0 : minimum;
+			    maximum = maximum === undefined ? 9007199254740992 : maximum;
+			    precision = precision === undefined ? 0 : precision;
+
+			    var random = Math.random() * (maximum - minimum) + minimum;
+
+			    return random.toFixed(precision);
+				}
+
+				function setup() {
+				  canvas = createCanvas(window.innerWidth, window.innerHeight);
+				  centerCanvas();
+				  canvas.parent('sketch-holder');
+
+				  receiptY = 450;
+
+				  button = createButton('');
+				  button.parent('button-container');
+				  button.id('startbutton');
+				  button.addClass('button--start');
+				  button.mousePressed(startVideo);
+
+					setInterval(setCost, 1000);
+					setInterval(setDuration, 1000);
+
+					secondsPassed = second();
+					duration = 0;
+				}
+
+				function setCost() {
+					feelingCost = Number.random(0.008, 0.800, 4);
+				}
+
+				function setDuration() {
+					duration = duration + 1;
+				}
+
+				function draw() {
+				  // Reset rectMode& background.
+				  background('#FFFFFF');
+
+				  // Biggest rectangle, a table or something.
+				  noFill();
+				  rectMode(CORNER);
+				  strokeWeight(3);
+				  stroke('#373737');
+				  rect(50,height-300,width-100,300, 6, 6, 0, 0);
+
+				  // Receipt slot
+				  rectMode(CENTER);
+				  stroke('#373737');
+				  strokeWeight(3);
+				  noFill();
+				  rect(width/2, (height-250), 320, 10, 6, 6, 0, 0);
+
+				  constrainedReceiptY = constrain(receiptY, 0, 500);
+				  receiptY = receiptY - 8;
+				  printReceipt();
+
+				  // Draw triangles first, so that rectangle strokes will layer on top.
+				  noStroke();
+				  fill('#f7f7f7');
+				  triangle(52, height, 52, height-294, width-52, height);
+
+				  stroke(3);
+				  line((width/2)-170, height-245, (width/2)+170, height-245);
+				}
+
+				function printReceipt() {
+				  push();
+				  translate(0, constrainedReceiptY);
+
+				  // Background
+				  rectMode(CENTER);
+				  strokeWeight(2);
+				  stroke('#F7F7F7');
+				  fill('#ffffff');
+				  rect(width/2, (height-452), 300, 400, 6, 6, 6, 6);
+
+				  // Shading Triangle
+				  noStroke();
+				  fill('#F7F7F7');
+				  triangle((width/2)-150, height-250, (width/2)+150, height-250, (width/2)+150, (height-452)-200);
+
+				  fill('#000000');
+				  textSize(16);
+				  textAlign(CENTER);
+				  textFont("Nitti Grotesk");
+				  textStyle(BOLD);
+				  text("Dionysian Hangover", (width/2), 110);
+
+				  fill('#000000');
+				  textSize(16);
+				  textAlign(CENTER);
+				  textFont("Nitti Grotesk");
+				  textStyle(NORMAL);
+				  text(moment().format('ddd MM/DD/YYYY hh:mm A'), (width/2), 132);
+
+					fill('#989ba0');
+					strokeWeight(0);
+				  textSize(15);
+				  textAlign(CENTER);
+				  textFont("Nitti Grotesk");
+					var thanksString = "THANK YOU for feeling.\nYour emotions are very important to us.\n"
+				  text(thanksString, (width/2), 155);
+
+				  stroke("#000000");
+				  strokeWeight(1);
+				  var x1 = (width/2)-135;
+				  var y1 = 190;
+				  var x2 = (width/2)+66;
+				  var y2 = 190;
+
+				  for (var i = 0; i <= 40; i++) {
+				    var x = lerp(x1, x2, i/30.0);
+				    var y = lerp(y1, y2, i/30.0);
+
+				    line(x, y, x+3, y);
+				  }
+
+					fill('#000000');
+					textSize(16);
+					textAlign(LEFT);
+					textStyle(NORMAL);
+					item1Left = text('Cost per Feeling', (width/2)-130, 410);
+					textAlign(RIGHT);
+					item1Right = text(feelingCost, (width/2)+130, 410)
+
+					fill('#000000');
+					textSize(16);
+					textStyle(NORMAL);
+					textAlign(LEFT);
+					text('Duration of Feeling', (width/2)-130, 430);
+					textAlign(RIGHT);
+					text(duration, (width/2)+130, 430)
+
+					fill('#000000');
+					textStyle(BOLD);
+					textSize(16);
+					textAlign(LEFT);
+					text('Total Cost', (width/2)-130, 460);
+					textAlign(RIGHT);
+					text(Number(Math.round((duration*feelingCost)+'e2')+'e-2'), (width/2)+130, 460);
+					// text(duration*feelingCost, (width/2)+130, 310);
+
+				  pop();
+
+				  // Rectangle for hiding the receipt as it prints.
+				  rectMode(CENTER);
+				  fill('#ffffff');
+				  noStroke();
+				  rect(width/2, (height-142), 300, 200);
+				}
+
+				function windowResized() {
+				  canvas.size(window.innerWidth, window.innerHeight);
+				  centerCanvas();
+				};
+
+
+			</script>
+		</div>
+
+		<script src="/js/sketch.js" charset="utf-8"></script>
+	</body>
+</html>

@@ -37,6 +37,7 @@
 						<p class="left">Gender</p>
 	          <p class="right" id="gender"></p>
 					</div>
+					<svg id="barcode"></svg>
 				</div>
 			</div>
 			<div id="button-container" class="button-container">
@@ -143,6 +144,16 @@
 					trackingStarted = true;
 					// start loop to draw face
 					drawLoop();
+
+					JsBarcode("#barcode", "1234", {
+					  format: "pharmacode",
+					  lineColor: "#0aa",
+					  width: 4,
+					  height: 40,
+					  displayValue: false
+					});
+
+					var barcode = $('#barcode');
 				}
 
 				var gender = undefined;
@@ -160,7 +171,7 @@
 						for (var i = 0;i < er.length;i++) {
 							if (er[i].value > 0.4) {
 								if(!responsiveVoice.isPlaying()) {
-									// responsiveVoice.speak('You are ' + er[i]['emotion'], "US English Female");
+									responsiveVoice.speak('You are ' + er[i]['emotion'], "US English Female");
 									document.getElementById('emotion_name').textContent=er[i]['emotion'];
 								}
 							}
@@ -204,6 +215,8 @@
 				var duration;
 				var item1Left;
 				var item1Right;
+				var barcode;
+
 
 				function centerCanvas() {
 				  var x = (windowWidth - width) / 2;

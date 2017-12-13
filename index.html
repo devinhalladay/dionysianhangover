@@ -87,14 +87,6 @@
 						adjustVideoProportions();
 						vid.play();
 					}
-					vid.onresize = function() {
-						adjustVideoProportions();
-						if (trackingStarted) {
-							ctrack.stop();
-							ctrack.reset();
-							ctrack.start(vid);
-						}
-					}
 				}
 
 				function authFail() {
